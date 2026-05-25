@@ -7,6 +7,7 @@ pipeline {
     }
 
     environment {
+        HOME = 'C:\\Windows\\System32\\config\\systemprofile'
         MAVEN_OPTS = '-Xmx1024m'
         APP_NAME = 'demo'
         APP_VERSION = '0.0.1-SNAPSHOT'
