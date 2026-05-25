@@ -7,7 +7,6 @@ pipeline {
     }
 
     environment {
-        HOME = 'C:\\Windows\\System32\\config\\systemprofile'
         MAVEN_OPTS = '-Xmx1024m'
         APP_NAME = 'demo'
         APP_VERSION = '0.0.1-SNAPSHOT'
@@ -105,10 +104,10 @@ pipeline {
                         echo Deploying ${jarFile} to ${remoteHost}
                         
                         REM 上传 JAR 文件
-                        scp target\\${jarFile} ${remoteHost}:${deployPath}/
+                        scp -i C:\\Windows\\System32\\config\\systemprofile target\\${jarFile} ${remoteHost}:${deployPath}/
                         
                         REM 远程部署（ssh 命令在 Windows 下同样可用）
-                        ssh -T ${remoteHost} "
+                        ssh -i C:\\Windows\\System32\\config\\systemprofile -T ${remoteHost} "
                             cd ${deployPath} && 
                             echo 'Stopping old application...' && 
                             pkill -f '${jarFile}' || true && 
