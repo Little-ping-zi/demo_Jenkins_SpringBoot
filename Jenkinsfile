@@ -105,10 +105,10 @@ pipeline {
                         echo Deploying ${jarFile} to ${remoteHost}
                         
                         // REM 上传 JAR 文件
-                        scp -i \\${privateSSHKey} target\\${jarFile} ${remoteHost}:${deployPath}/
+                        scp -i ${privateSSHKey} target\\${jarFile} ${remoteHost}:${deployPath}/
                         
                         // REM 远程部署（ssh 命令在 Windows 下同样可用）
-                        ssh -i \\${privateSSHKey} -T ${remoteHost} "
+                        ssh -i ${privateSSHKey} -T ${remoteHost} "
                             cd ${deployPath} && 
                             echo 'Stopping old application...' && 
                             pkill -f '${jarFile}' || true && 
