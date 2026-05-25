@@ -97,17 +97,18 @@ pipeline {
                     def remoteHost = 'ubuntu@111.230.13.53'
                     def deployPath = '/home/ubuntu/deployments'
                     def jarFile = "${APP_NAME}-${APP_VERSION}.jar"
+                    def privateSSHKey = 'C:\\Windows\\System32\\config\\systemprofile\\.ssh\\id_ed25519'
 
                     // Windows 下使用 bat，但 scp/ssh 需要 Windows 支持（如 OpenSSH 或 WSL）
                     // 以下示例假设已安装 OpenSSH for Windows 并加入 PATH
                     bat """
                         echo Deploying ${jarFile} to ${remoteHost}
                         
-                        REM 上传 JAR 文件
-                        scp -i C:\\Windows\\System32\\config\\systemprofile target\\${jarFile} ${remoteHost}:${deployPath}/
+                        // REM 上传 JAR 文件
+                        scp -i \\${privateSSHKey} target\\${jarFile} ${remoteHost}:${deployPath}/
                         
-                        REM 远程部署（ssh 命令在 Windows 下同样可用）
-                        ssh -i C:\\Windows\\System32\\config\\systemprofile -T ${remoteHost} "
+                        // REM 远程部署（ssh 命令在 Windows 下同样可用）
+                        ssh -i \\${privateSSHKey} -T ${remoteHost} "
                             cd ${deployPath} && 
                             echo 'Stopping old application...' && 
                             pkill -f '${jarFile}' || true && 
