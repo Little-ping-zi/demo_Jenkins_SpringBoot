@@ -102,13 +102,21 @@ pipeline {
                     // Windows 下使用 bat，但 scp/ssh 需要 Windows 支持（如 OpenSSH 或 WSL）
                     // 以下示例假设已安装 OpenSSH for Windows 并加入 PATH
                     bat """
+
+                        REM 临时设置 HOME 为 SYSTEM 用户目录
+                        set HOME=C:\\Windows\\System32\\config\\systemprofile
+                        set USERPROFILE=C:\\Windows\\System32\\config\\systemprofile
+
+                        echo "HOME=%HOME%"
+                        echo "USERPROFILE=%USERPROFILE%"
+                        
                         echo Deploying ${jarFile} to ${remoteHost}
                         
                         REM 上传 JAR 文件
-                        scp -i ${privateSSHKey} -o StrictHostKeyChecking=no target\\${jarFile} ${remoteHost}:${deployPath}/
+                        scp -o StrictHostKeyChecking=no target\\${jarFile} ${remoteHost}:${deployPath}/
                         
                         REM 远程部署（ssh 命令在 Windows 下同样可用）
-                        ssh -i ${privateSSHKey} -o StrictHostKeyChecking=no -T ${remoteHost} "
+                        ssh -o StrictHostKeyChecking=no -T ${remoteHost} "
                             cd ${deployPath} && 
                             echo 'Stopping old application...' && 
                             pkill -f '${jarFile}' || true && 
