@@ -98,44 +98,41 @@ pipeline {
                     def deployPath = '/home/ubuntu/deployments'
                     def jarFile = "${APP_NAME}-${APP_VERSION}.jar"
                     def privateSSHKey = 'C:\\Windows\\System32\\config\\systemprofile\\.ssh\\id_ed25519'
-
-                    sshagent(['ubuntu-ssh-key']){
-                        // Windows 下使用 bat，但 scp/ssh 需要 Windows 支持（如 OpenSSH 或 WSL）
-                        // 以下示例假设已安装 OpenSSH for Windows 并加入 PATH
-                        bat """
-                            echo Deploying ${jarFile} to ${remoteHost}
-                            
-                            REM 上传 JAR 文件
-                            scp -i ${privateSSHKey} -o StrictHostKeyChecking=no target\\${jarFile} ${remoteHost}:${deployPath}/
-                            
-                            REM 远程部署（ssh 命令在 Windows 下同样可用）
-                            ssh -i ${privateSSHKey} -o StrictHostKeyChecking=no -T ${remoteHost} "
-                                cd ${deployPath} && 
-                                echo 'Stopping old application...' && 
-                                pkill -f '${jarFile}' || true && 
-                                sleep 2 && 
-                                pkill -9 -f '${jarFile}' || true && 
-                                echo 'Starting application...' &&
-                                nohup java -jar ${jarFile} > app.log 2>&\1 &
-                                APP_PID=\$! &&
-                                echo \"Application started with PID: \$APP_PID\" &&
-                                sleep 5 &&
-                                if ps -p \$APP_PID > /dev/null 2>&\1; then
-                                echo \"✅ Application process is running (PID: \$APP_PID)\" && 
-                                if grep -i 'error\\|exception\\|failed' app.log | tail -5; then 
-                                    echo '⚠️ Found errors in logs, but application is running' 
-                                fi && 
-                                exit 0;
-                                else
-                                echo '❌ Application process is not running' &&
-                                tail -n 30 app.log || true && 
-                                exit 1; 
-                                fi
-                            "
-                            
-                            echo '✅ Deployment completed'
-                        """
-                    }                    
+                   
+                    // Windows 下使用 bat，但 scp/ssh 需要 Windows 支持（如 OpenSSH 或 WSL）
+                    // 以下示例假设已安装 OpenSSH for Windows 并加入 PATH
+                    bat """
+                        echo Deploying ${jarFile} to ${remoteHost}
+                        
+                        REM 上传 JAR 文件
+                        scp -i ${privateSSHKey} -o StrictHostKeyChecking=no target\\${jarFile} ${remoteHost}:${deployPath}/
+                        
+                        REM 远程部署（ssh 命令在 Windows 下同样可用）
+                        ssh -i ${privateSSHKey} -o StrictHostKeyChecking=no -T ${remoteHost} "
+                            cd ${deployPath} && 
+                            echo 'Stopping old application...' && 
+                            pkill -f '${jarFile}' || true && 
+                            sleep 2 && 
+                            pkill -9 -f '${jarFile}' || true && 
+                            echo 'Starting application...' &&
+                            nohup java -jar ${jarFile} > app.log 2>&\1 &
+                            APP_PID=\$! &&
+                            echo \"Application started with PID: \$APP_PID\" &&
+                            sleep 5 &&
+                            if ps -p \$APP_PID > /dev/null 2>&\1; then
+                            echo \"✅ Application process is running (PID: \$APP_PID)\" && 
+                            if grep -i 'error\\|exception\\|failed' app.log | tail -5; then 
+                                echo '⚠️ Found errors in logs, but application is running' 
+                            fi && 
+                            exit 0;
+                            else
+                            echo '❌ Application process is not running' &&
+                            tail -n 30 app.log || true && 
+                            exit 1; 
+                            fi
+                        "                       
+                        echo '✅ Deployment completed'
+                    """                
                 }
             }
             post {
