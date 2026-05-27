@@ -101,8 +101,8 @@ pipeline {
                         echo 'Deploying ${jarFile} to ${DEPLOY_PATH}'
 
                         # 创建部署目录（如果不存在）
-                        sudo mkdir -p ${DEPLOY_PATH}
-                        sudo chown -R 1000:1000 ${DEPLOY_PATH}
+                        mkdir -p ${DEPLOY_PATH}
+                        chown -R 1000:1000 ${DEPLOY_PATH}
 
                         # 复制 JAR 文件到部署目录
                         cp target/${jarFile} ${DEPLOY_PATH}/
@@ -111,16 +111,16 @@ pipeline {
 
                         # 停止旧应用
                         echo "Stopping old application..."
-                        sudo pkill -f "${jarFile}" || true
+                        pkill -f "${jarFile}" || true
                         sleep 2
 
                         # 再次确认进程已停止
-                        sudo pkill -9 -f "${jarFile}" || true
+                        pkill -9 -f "${jarFile}" || true
                         sleep 1
 
                         # 启动新应用
                         echo "Starting application..."
-                        sudo nohup java -jar ${jarFile} > app.log 2>&1 &
+                        nohup java -jar ${jarFile} > app.log 2>&1 &
                         APP_PID=\$!
 
                         echo "Application started with PID: \${APP_PID}"
