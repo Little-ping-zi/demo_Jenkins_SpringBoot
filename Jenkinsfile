@@ -10,6 +10,8 @@ pipeline {
         MAVEN_OPTS = '-Xmx1024m'
         APP_NAME = 'demo'
         APP_VERSION = '0.0.1-SNAPSHOT'
+        // 部署目录：宿主机上的绝对路径（Jenkins 容器通过挂载卷访问）
+        DEPLOY_PATH = '/opt/deployments'
     }
 
     options {
@@ -26,17 +28,16 @@ pipeline {
             steps {
                 echo '🔍 Checking out code...'
                 git branch: 'main',
-                    url: 'git@github.com:Little-ping-zi/demo_Jenkins_SpringBoot.git',
+                    url: 'https://github.com/Little-ping-zi/demo_Jenkins_SpringBoot.git',
                     credentialsId: 'Github-token'
 
                 script {
-                    // Windows 下使用 bat 获取 Git 信息
-                    env.GIT_COMMIT_MSG = bat(
-                        script: 'git log -1 --pretty=%%B',
+                    env.GIT_COMMIT_MSG = sh(
+                        script: 'git log -1 --pretty=%B',
                         returnStdout: true
                     ).trim()
-                    env.GIT_COMMIT_AUTHOR = bat(
-                        script: 'git log -1 --pretty=%%an',
+                    env.GIT_COMMIT_AUTHOR = sh(
+                        script: 'git log -1 --pretty=%an',
                         returnStdout: true
                     ).trim()
                 }
@@ -47,9 +48,9 @@ pipeline {
         stage('Build') {
             steps {
                 echo '🔨 Building application...'
-                // Windows 下使用 bat 执行 mvnw.cmd
-                bat '''
-                    mvnw.cmd clean package -DskipTests
+                sh '''
+                    chmod +x mvnw
+                    ./mvnw clean package -DskipTests
                 '''
             }
             post {
@@ -66,11 +67,11 @@ pipeline {
         stage('Test') {
             steps {
                 echo '🧪 Running tests...'
-                bat 'mvnw.cmd test'
+                sh './mvnw test'
             }
             post {
                 always {
-                    // 发布测试报告（Windows 路径同样适用）
+                    // 发布测试报告
                     junit allowEmptyResults: true, testResults: '**/target/surefire-reports/*.xml'
                 }
                 success {
@@ -85,62 +86,64 @@ pipeline {
         stage('Code Quality') {
             steps {
                 echo '📊 Analyzing code quality...'
-                bat 'mvnw.cmd verify'
+                sh './mvnw verify'
             }
         }
 
         stage('Deploy') {
             steps {
-                echo '🚀 Deploying application...'
+                echo '🚀 Deploying application to Ubuntu server...'
 
                 script {
-                    def remoteHost = 'ubuntu@111.230.13.53'
-                    def deployPath = '/home/ubuntu/deployments'
                     def jarFile = "${APP_NAME}-${APP_VERSION}.jar"
-                    def privateSSHKey = 'C:\\Windows\\System32\\config\\systemprofile\\.ssh\\id_ed25519'
-                   
-                    // Windows 下使用 bat，但 scp/ssh 需要 Windows 支持（如 OpenSSH 或 WSL）
-                    // 以下示例假设已安装 OpenSSH for Windows 并加入 PATH
-                    bat """
+                    
+                    sh """
+                        echo 'Deploying ${jarFile} to ${DEPLOY_PATH}'
 
-                        REM 临时设置 HOME 为 SYSTEM 用户目录
-                        set HOME=C:\\Windows\\System32\\config\\systemprofile
-                        set USERPROFILE=C:\\Windows\\System32\\config\\systemprofile
+                        # 创建部署目录（如果不存在）
+                        sudo mkdir -p ${DEPLOY_PATH}
+                        sudo chown -R 1000:1000 ${DEPLOY_PATH}
 
-                        echo "HOME=%HOME%"
-                        echo "USERPROFILE=%USERPROFILE%"
-                        
-                        echo Deploying ${jarFile} to ${remoteHost}
-                        
-                        REM 上传 JAR 文件
-                        scp -o StrictHostKeyChecking=no target\\${jarFile} ${remoteHost}:${deployPath}/
-                        
-                        REM 远程部署（ssh 命令在 Windows 下同样可用）
-                        ssh -o StrictHostKeyChecking=no -T ${remoteHost} "
-                            cd ${deployPath} && 
-                            echo 'Stopping old application...' && 
-                            pkill -f '${jarFile}' || true && 
-                            sleep 2 && 
-                            pkill -9 -f '${jarFile}' || true && 
-                            echo 'Starting application...' &&
-                            nohup java -jar ${jarFile} > app.log 2>&\1 &
-                            APP_PID=\$! &&
-                            echo \"Application started with PID: \$APP_PID\" &&
-                            sleep 5 &&
-                            if ps -p \$APP_PID > /dev/null 2>&\1; then
-                            echo \"✅ Application process is running (PID: \$APP_PID)\" && 
-                            if grep -i 'error\\|exception\\|failed' app.log | tail -5; then 
-                                echo '⚠️ Found errors in logs, but application is running' 
-                            fi && 
-                            exit 0;
-                            else
-                            echo '❌ Application process is not running' &&
-                            tail -n 30 app.log || true && 
-                            exit 1; 
+                        # 复制 JAR 文件到部署目录
+                        cp target/${jarFile} ${DEPLOY_PATH}/
+
+                        cd ${DEPLOY_PATH}
+
+                        # 停止旧应用
+                        echo "Stopping old application..."
+                        sudo pkill -f "${jarFile}" || true
+                        sleep 2
+
+                        # 再次确认进程已停止
+                        sudo pkill -9 -f "${jarFile}" || true
+                        sleep 1
+
+                        # 启动新应用
+                        echo "Starting application..."
+                        sudo nohup java -jar ${jarFile} > app.log 2>&1 &
+                        APP_PID=\$!
+
+                        echo "Application started with PID: \${APP_PID}"
+                        sleep 5
+
+                        # 验证进程是否在运行
+                        if ps -p \${APP_PID} > /dev/null 2>&1; then
+                            echo "✅ Application process is running (PID: \${APP_PID})"
+
+                            # 检查日志中是否有错误
+                            if grep -i "error\\|exception\\|failed" app.log | tail -5; then
+                                echo "⚠️ Found errors in logs, but application is running"
                             fi
-                        "                       
-                        echo '✅ Deployment completed'
-                    """                
+
+                            echo "✅ Application deployed successfully on Ubuntu server"
+                            exit 0
+                        else
+                            echo "❌ Application process is not running"
+                            echo "Last 30 lines of log:"
+                            tail -n 30 app.log || true
+                            exit 1
+                        fi
+                    """
                 }
             }
             post {
