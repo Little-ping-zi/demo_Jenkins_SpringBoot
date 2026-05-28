@@ -158,10 +158,10 @@ pipeline {
     }
 
     post {
-        always {
-            echo '🧹 Cleaning up workspace...'
-            cleanWs()
-        }
+        //always {
+            //echo '🧹 Cleaning up workspace...'
+            //cleanWs()
+       //}
         success {
             echo '🎉 Pipeline completed successfully!'
             // 可以添加通知，例如邮件或 Slack
