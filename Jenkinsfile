@@ -119,12 +119,20 @@ pipeline {
                         sleep 1
 
                         # 启动新应用
+                        # BUILD_ID=dontKillMe 防止 Jenkins 在步骤结束时杀掉后台 Java 进程
                         echo "Starting application..."
+                        export BUILD_ID=dontKillMe
                         setsid nohup java -jar ${jarFile} > app.log 2>&1 &
                         APP_PID=\$!
+                        disown
 
                         echo "Application started with PID: \${APP_PID}"
-                        sleep 600
+
+                        # 等待应用启动（最多 30 秒）
+                        if ps -p \${APP_PID} > /dev/null 2>&1 && grep -q "Started DemoApplication" app.log 2>/dev/null; then
+                            break
+                        fi
+                        sleep 2
 
                         # 验证进程是否在运行
                         if ps -p \${APP_PID} > /dev/null 2>&1; then
