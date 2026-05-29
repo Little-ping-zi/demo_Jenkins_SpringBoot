@@ -124,7 +124,7 @@ pipeline {
                         APP_PID=\$!
 
                         echo "Application started with PID: \${APP_PID}"
-                        sleep 5
+                        sleep 600
 
                         # 验证进程是否在运行
                         if ps -p \${APP_PID} > /dev/null 2>&1; then
