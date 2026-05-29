@@ -97,7 +97,8 @@ pipeline {
                 script {
                     def jarFile = "${APP_NAME}-${APP_VERSION}.jar"
                     
-                    sh """
+                    sh """  
+                        BUILD_ID=dontKillMe
                         echo 'Deploying ${jarFile} to ${DEPLOY_PATH}'
 
                         # 创建部署目录（如果不存在）
@@ -111,12 +112,12 @@ pipeline {
 
                         # 停止旧应用
                         echo "Stopping old application..."
-                        #pkill -f "${jarFile}" || true
-                        #sleep 2
+                        pkill -f "${jarFile}" || true
+                        sleep 2
 
                         # 再次确认进程已停止
-                        #pkill -9 -f "${jarFile}" || true
-                        #sleep 1
+                        pkill -9 -f "${jarFile}" || true
+                        sleep 1
 
                         # 启动新应用
                         echo "Starting application..."
