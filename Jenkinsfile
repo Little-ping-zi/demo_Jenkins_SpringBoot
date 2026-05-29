@@ -98,8 +98,6 @@ pipeline {
                     def jarFile = "${APP_NAME}-${APP_VERSION}.jar"
                     
                     sh """  
-                        BUILD_ID=dontKillMe
-                        
                         echo 'Deploying ${jarFile} to ${DEPLOY_PATH}'
 
                         # 创建部署目录（如果不存在）
@@ -122,7 +120,7 @@ pipeline {
 
                         # 启动新应用
                         echo "Starting application..."
-                        nohup java -jar ${jarFile} > app.log 2>&1 &
+                        nohup java -jar ${jarFile} --server.port=8082 --server.address=0.0.0.0 > app.log 2>&1 &
                         APP_PID=\$!
 
                         echo "Application started with PID: \${APP_PID}"
