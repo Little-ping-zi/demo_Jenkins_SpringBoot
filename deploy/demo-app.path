@@ -1,0 +1,6 @@
+[Path]
+PathModified=/opt/deployments/restart.flag
+Unit=demo-app-restart.service
+
+[Install]
+WantedBy=multi-user.target

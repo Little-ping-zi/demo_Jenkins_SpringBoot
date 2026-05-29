@@ -1,0 +1,8 @@
+[Unit]
+Description=Restart Demo Spring Boot Application
+After=demo-app.service
+
+[Service]
+Type=oneshot
+ExecStart=/bin/rm -f /opt/deployments/restart.flag
+ExecStart=/bin/systemctl restart demo-app.service

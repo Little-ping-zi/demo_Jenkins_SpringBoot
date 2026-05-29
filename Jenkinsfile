@@ -96,64 +96,36 @@ pipeline {
 
                 script {
                     def jarFile = "${APP_NAME}-${APP_VERSION}.jar"
-                    
-                    sh """  
+
+                    sh """
                         echo 'Deploying ${jarFile} to ${DEPLOY_PATH}'
 
                         # 创建部署目录（如果不存在）
                         mkdir -p ${DEPLOY_PATH}
-                        chown -R 1000:1000 ${DEPLOY_PATH}
 
-                        # 复制 JAR 文件到部署目录
+                        # 复制 JAR 到宿主机挂载目录（由 systemd 在宿主机上启动，避免被 Jenkins 容器杀掉）
                         cp target/${jarFile} ${DEPLOY_PATH}/
 
-                        cd ${DEPLOY_PATH}
+                        # 触发宿主机 systemd 重启应用（需先在宿主机执行 deploy/install-systemd.sh）
+                        rm -f ${DEPLOY_PATH}/restart.flag
+                        touch ${DEPLOY_PATH}/restart.flag
 
-                        # 停止旧应用
-                        echo "Stopping old application..."
-                        pkill -f "${jarFile}" || true
-                        sleep 2
-
-                        # 再次确认进程已停止
-                        pkill -9 -f "${jarFile}" || true
-                        sleep 1
-
-                        # 启动新应用
-                        # BUILD_ID=dontKillMe 防止 Jenkins 在步骤结束时杀掉后台 Java 进程
-                        echo "Starting application..."
-                        export BUILD_ID=dontKillMe
-                        setsid nohup java -jar ${jarFile} > app.log 2>&1 &
-                        APP_PID=\$!
-
-                        echo "Application started with PID: \${APP_PID}"
-
-                        # 等待应用启动（最多 30 秒，POSIX sh 兼容）
+                        echo 'Waiting for application to start on host...'
                         i=1
-                        while [ \$i -le 15 ]; do
-                            if ps -p \${APP_PID} > /dev/null 2>&1 && grep -q "Started DemoApplication" app.log 2>/dev/null; then
-                                break
+                        while [ \$i -le 30 ]; do
+                            if grep -q "Started DemoApplication" ${DEPLOY_PATH}/app.log 2>/dev/null; then
+                                echo "✅ Application started on host"
+                                exit 0
                             fi
                             sleep 2
                             i=\$((i + 1))
                         done
 
-                        # 验证进程是否在运行
-                        if ps -p \${APP_PID} > /dev/null 2>&1; then
-                            echo "✅ Application process is running (PID: \${APP_PID})"
-
-                            # 检查日志中是否有错误
-                            if grep -i "error\\|exception\\|failed" app.log | tail -5; then
-                                echo "⚠️ Found errors in logs, but application is running"
-                            fi
-
-                            echo "✅ Application deployed successfully on Ubuntu server"
-                            exit 0
-                        else
-                            echo "❌ Application process is not running"
-                            echo "Last 30 lines of log:"
-                            tail -n 30 app.log || true
-                            exit 1
-                        fi
+                        echo "❌ Application did not start within 60 seconds"
+                        echo "Last 30 lines of log:"
+                        tail -n 30 ${DEPLOY_PATH}/app.log 2>/dev/null || true
+                        echo "Hint: run 'sudo bash deploy/install-systemd.sh' once on the Ubuntu host"
+                        exit 1
                     """
                 }
             }

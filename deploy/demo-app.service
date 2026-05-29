@@ -1,0 +1,17 @@
+[Unit]
+Description=Demo Spring Boot Application
+After=network.target
+
+[Service]
+Type=simple
+User=ubuntu
+Group=ubuntu
+WorkingDirectory=/opt/deployments
+ExecStart=/usr/bin/java -jar /opt/deployments/demo-0.0.1-SNAPSHOT.jar
+Restart=on-failure
+RestartSec=10
+StandardOutput=append:/opt/deployments/app.log
+StandardError=append:/opt/deployments/app.log
+
+[Install]
+WantedBy=multi-user.target
