@@ -99,6 +99,7 @@ pipeline {
                     
                     sh """  
                         BUILD_ID=dontKillMe
+                        
                         echo 'Deploying ${jarFile} to ${DEPLOY_PATH}'
 
                         # 创建部署目录（如果不存在）
