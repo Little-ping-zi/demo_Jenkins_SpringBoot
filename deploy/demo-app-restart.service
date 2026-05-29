@@ -1,8 +1,16 @@
 [Unit]
 Description=Restart Demo Spring Boot Application
-After=demo-app.service
 
 [Service]
 Type=oneshot
+# 必须通过 systemctl 停止，不能用 pkill 直接杀（否则会触发自动重启）
+ExecStart=/bin/systemctl stop demo-app.service
+ExecStart=-/bin/sleep 3
+ExecStart=-/bin/systemctl kill -s SIGKILL demo-app.service
+ExecStart=-/bin/sleep 1
+# stop 之后若仍有 Jenkins 遗留的孤儿进程，再清理（此时不会触发 systemd 重启）
+ExecStart=-/usr/bin/pkill -f /opt/deployments/demo-0.0.1-SNAPSHOT.jar
+ExecStart=-/bin/sleep 1
 ExecStart=/bin/rm -f /opt/deployments/restart.flag
-ExecStart=/bin/systemctl restart demo-app.service
+ExecStart=/bin/systemctl reset-failed demo-app.service
+ExecStart=/bin/systemctl start demo-app.service

@@ -106,7 +106,10 @@ pipeline {
                         # 复制 JAR 到宿主机挂载目录（由 systemd 在宿主机上启动，避免被 Jenkins 容器杀掉）
                         cp target/${jarFile} ${DEPLOY_PATH}/
 
-                        # 触发宿主机 systemd 重启应用（需先在宿主机执行 deploy/install-systemd.sh）
+                        # 停止 Jenkins 容器内可能残留的旧进程（宿主机由 systemd 负责停服，勿用 pkill）
+                        pkill -f "${jarFile}" || true
+
+                        # 触发宿主机 systemd：先停旧应用/孤儿进程，再启动新实例
                         rm -f ${DEPLOY_PATH}/restart.flag
                         touch ${DEPLOY_PATH}/restart.flag
 
