@@ -111,12 +111,12 @@ pipeline {
 
                         # 停止旧应用
                         echo "Stopping old application..."
-                        //pkill -f "${jarFile}" || true
-                        //sleep 2
+                        #pkill -f "${jarFile}" || true
+                        #sleep 2
 
                         # 再次确认进程已停止
-                        //pkill -9 -f "${jarFile}" || true
-                        //sleep 1
+                        #pkill -9 -f "${jarFile}" || true
+                        #sleep 1
 
                         # 启动新应用
                         echo "Starting application..."
