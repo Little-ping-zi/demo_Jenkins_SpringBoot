@@ -120,7 +120,7 @@ pipeline {
 
                         # 启动新应用
                         echo "Starting application..."
-                        setsid nohup java -jar ${jarFile} --server.port=8082 --server.address=0.0.0.0 > app.log 2>&1 &
+                        java -jar ${jarFile} --server.port=8082 --server.address=0.0.0.0 > app.log 2>&1 &
                         APP_PID=\$!
 
                         echo "Application started with PID: \${APP_PID}"
